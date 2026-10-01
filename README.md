@@ -59,24 +59,25 @@
 
 ### `search_listings`
 
-- **What it does:**
-- **Inputs:** <!-- name and type each: `max_price` (float), not "a price" -->
-- **Returns:**
-- **When it has nothing:**
+- **What it does:** Searches listings data for items that match a description, with options for size and max price.
+- **Inputs:** `description` (str), `size` (str), `max_price` (float)
+<!-- name and type each: `max_price` (float), not "a price" -->
+- **Returns:** A list a dictionaries that match the description which include `title` `category` `style_tags` `size` `condition` `price` `colors` `brand` and `platform`.
+- **When it has nothing:** If search_listing returns an empty list, put a message in the session and stop. Otherwise take the next suggestion and go to suggest_outfit.
 
 ### `suggest_outfit`
 
-- **What it does:**
-- **Inputs:**
-- **Returns:**
-- **When it has nothing:**
+- **What it does:** When given an item and the user's wardrobe, it suggests one of two outfits.
+- **Inputs:** `new_item` (dict), `wardrobe` (dict)
+- **Returns:** A non-empty string with outfit suggestions.
+- **When it has nothing:** If given an empty wardrobe, it returns general styling advice.
 
 ### `create_fit_card`
 
-- **What it does:**
-- **Inputs:**
-- **Returns:**
-- **When it has nothing:**
+- **What it does:** Creates a short caption that someone would post about the find.
+- **Inputs:** `outfit` (str), `new_item` (dict)
+- **Returns:** A string with a two-to-four sentence caption.
+- **When it has nothing:** If `outfit` is empty or whitespace, it returns a descriptive message.
 
 ---
 
@@ -93,13 +94,13 @@
      The grader checks your code against what you claim here, so the file and
      function have to be real. -->
 
-**Branch rule:**
+**Branch rule:**If search_listings returns an empty list, put a message in the session and stop. Otherwise take the first result and go to suggest_outfit.
 
 **Where it lives:** `agent.py::run_agent`
 
-**How the query is parsed:** <!-- regex, string splitting, or asking the model — say which -->
+**How the query is parsed:** regex <!-- regex, string splitting, or asking the model — say which -->
 
-**What moves through the session:** <!-- which fields, in what order -->
+**What moves through the session:** A user's `description` string goes into `search_listings()` with optional `size` and `max_price`. A list of matching dicts out from `search_listings()`. A single `new_item` dict into `suggest_outfit()` with the users `wardrobe`. An `outfit` suggestion string out from `suggest_outfit()` and into `create_fit_card()` with the same `new_item`. `create_fit_card()` lastly returns a string with either a short caption or descriptive message. <!-- which fields, in what order -->
 
 ---
 
