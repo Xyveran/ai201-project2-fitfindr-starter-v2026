@@ -38,7 +38,7 @@ def _keywords(text: str) -> set[str]:
 
 def _size_tokens(size: str) -> set[str]:
     cleaned = re.sub(r"\([^)]*\)", " ", size or "")
-    parts = [p.strip().upper for p in cleaned.split("/")]
+    parts = [p.strip().upper() for p in cleaned.split("/")]
     return {p for p in parts if p}
 
 
@@ -102,8 +102,46 @@ def search_listings(
     Test it from a terminal before you move on:
         python -c "from tools import search_listings; print(search_listings('graphic tee', max_price=30))"
     """
-    # TODO: replace this with your implementation
-    return []
+
+    # Load every available listing
+    listing_data = load_listings()
+
+    # filter by max_price and size when provided
+    listing_data = [
+        listing
+        for listing in listing_data
+        if (not max_price or listing["price"] <= max_price)
+        and _size_matches(size, listing["size"])
+    ]
+
+    # score remaining by keyword overlap with `description`, drop zero scores
+    keywords = _keywords(description)
+    keys_to_extract = [
+        "title",
+        "description",
+        "category",
+        "style_tags",
+        "colors",
+        "brand",
+    ]
+
+    scored = []
+    for listing in listing_data:
+        listing_aggregate = " ".join(
+            [str(listing[key]) for key in keys_to_extract if key in listing]
+        )
+        listing_keywords = _keywords(listing_aggregate)
+
+        score = len(keywords & listing_keywords)
+        if score > 0:
+            scored.append((score, listing))
+
+    # sort by score, highest first
+    scored.sort(key=lambda pair: pair[0], reverse=True)
+    sorted_listings = [listing for _, listing in scored]
+
+    # return the listing dicts — at most config.SEARCH_RESULT_LIMIT of them.
+    return sorted_listings[: config.SEARCH_RESULT_LIMIT]
 
 
 # ── Tool 2: suggest_outfit ────────────────────────────────────────────────────
@@ -137,8 +175,33 @@ def suggest_outfit(new_item: dict, wardrobe: dict) -> str:
     Test it from a terminal before you move on:
         python -c "from tools import suggest_outfit; from utils.data_loader import get_example_wardrobe, load_listings; print(suggest_outfit(load_listings()[0], get_example_wardrobe()))"
     """
-    # TODO: replace this with your implementation
-    return ""
+
+    colors_str = ", ".join(new_item.get("colors", []))
+    new_item_content = f"{new_item['title']}, {new_item['description']}, {colors_str}"
+
+    items = wardrobe.get("items") if wardrobe else None
+
+    if not items:
+        prompt = f"""
+        Suggest some general styling ideas for this item:
+        {new_item_content}"""
+
+    else:
+        wardrobe_text = "\n".join(
+            f"- {item.get('name')} ({item.get('category')}): {', '.join(item.get('colors', []))}"
+            for item in items
+        )
+        prompt = f"""
+        Given this new item: {new_item_content}
+        
+        and this wardrobe:
+        {wardrobe_text}
+
+        Give me styling ideas for the new item in combination with pieces from the wardrobe.
+        Name specific pieces that are already within the wardrobe.
+        """
+
+    return generate(prompt)
 
 
 # ── Tool 3: create_fit_card ───────────────────────────────────────────────────
@@ -178,5 +241,24 @@ def create_fit_card(outfit: str, new_item: dict) -> str:
     Test it from a terminal before you move on:
         python -c "from tools import create_fit_card; from utils.data_loader import load_listings; print(create_fit_card('jeans and white sneakers', load_listings()[0]))"
     """
-    # TODO: replace this with your implementation
-    return ""
+
+    suggestion = outfit.strip()
+
+    if not suggestion:
+        return "Unable to create a fit card. Outfit suggestion string was either empty or whitespace."
+
+    else:
+        prompt = f"""
+        Write 2-4 sentence caption someone would actually post about the find.
+        The caption should read like a real post rather than a product description.
+        Mention the item and its price and platform once each if available, and be specific about
+        the vibe.
+
+        Find:
+        {new_item}
+
+        Suggestion:
+        {suggestion}
+        """
+
+    return generate(prompt)
