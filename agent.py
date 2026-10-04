@@ -13,13 +13,15 @@ Build and test your three tools in `tools.py` first. Then come here.
     python agent.py          runs both example paths below
 """
 
+import re
 import config
 import trace
 from tools import search_listings, suggest_outfit, create_fit_card
+from trace import step, start_trace, get_trace
 from generate import ModelUnavailable
 
-
 # ── session state ─────────────────────────────────────────────────────────────
+
 
 def new_session(query: str, wardrobe: dict) -> dict:
     """
@@ -32,22 +34,96 @@ def new_session(query: str, wardrobe: dict) -> dict:
     and you would not be able to test it — you can't print a variable you have
     already overwritten. Going through the session is what makes the state
     visible, and unit 4 has you write a criterion about exactly that.
-
-    Add fields if you need them.
     """
     return {
-        "query": query,              # what the user typed
-        "parsed": {},                # description / size / max_price you pulled out of it
-        "search_results": [],        # everything search_listings returned
-        "selected_item": None,       # the one you chose — goes into suggest_outfit
-        "wardrobe": wardrobe,        # the user's wardrobe
-        "outfit_suggestion": None,   # what suggest_outfit returned
-        "fit_card": None,            # what create_fit_card returned
-        "error": None,               # set when the run ended early
+        "query": query,  # what the user typed
+        "parsed": {},  # description / size / max_price you pulled out of it
+        "search_results": [],  # everything search_listings returned
+        "selected_item": None,  # the one you chose — goes into suggest_outfit
+        "wardrobe": wardrobe,  # the user's wardrobe
+        "outfit_suggestion": None,  # what suggest_outfit returned
+        "fit_card": None,  # what create_fit_card returned
+        "error": None,  # set when the run ended early
     }
 
 
+# ── parsing the query ─────────────────────────────────────────────────────────
+
+# Sizes a user is likely to type. Matched as whole words so that the "M" in
+# "Medium Wash" or the "L" in "L/XL" can't be mistaken for a request.
+_SIZE_WORDS = r"XXS|XS|S|M|L|XL|XXL"
+
+_PRICE_RE = re.compile(
+    r"(?:under|below|less than|max|up to)?\s*\$\s*(\d+(?:\.\d+)?)", re.I
+)
+_SIZE_RE = re.compile(rf"\bsize\s+({_SIZE_WORDS}|US\s*\d+(?:\.\d+)?|W\d+)\b", re.I)
+_BARE_SIZE_RE = re.compile(rf",\s*({_SIZE_WORDS})\s*$", re.I)
+
+
+def parse_query(query: str) -> dict:
+    """
+    Pull a description, a size and a price ceiling out of what the user typed.
+
+    Regex rather than a model call, for three reasons worth writing down: it
+    costs nothing, it returns the same answer twice (which the unit 4 state
+    criterion depends on), and when it gets something wrong the reason is
+    readable in the pattern instead of being a model's opinion.
+
+    What it gives up is phrasing it has never seen. "nothing over thirty
+    dollars" parses to no price at all, and the run then quietly ignores the
+    ceiling. That limitation is in the README rather than hidden here.
+
+    Returns a dict with keys `description` (str), `size` (str or None) and
+    `max_price` (float or None).
+    """
+    text = query or ""
+
+    max_price = None
+    price_match = _PRICE_RE.search(text)
+    if price_match:
+        max_price = float(price_match.group(1))
+        text = text[: price_match.start()] + " " + text[price_match.end() :]
+
+    size = None
+    size_match = _SIZE_RE.search(text) or _BARE_SIZE_RE.search(text)
+    if size_match:
+        size = re.sub(r"\s+", " ", size_match.group(1)).strip().upper()
+        text = text[: size_match.start()] + " " + text[size_match.end() :]
+
+    description = re.sub(r"[,\s]+", " ", text).strip(" ,")
+    return {"description": description, "size": size, "max_price": max_price}
+
+
 # ── planning loop ─────────────────────────────────────────────────────────────
+
+
+def _search(parsed: dict) -> list[dict]:
+    """
+    Call search_listings — over MCP when the server has it registered.
+
+    ⚠️ UNIT 4, MILESTONE 1. In unit 3 this function does not exist and
+    `run_agent` calls `search_listings(...)` directly. The fallback is not
+    belt-and-braces for its own sake: `python agent.py` has to keep working
+    while the MCP side is half-built, and a student whose 40 minutes ran out
+    still needs the rest of the week to run.
+    """
+    try:
+        from mcp_client import call_tool
+
+        results = call_tool(
+            "search_listings",
+            {
+                "description": parsed["description"],
+                "size": parsed["size"],
+                "max_price": parsed["max_price"],
+            },
+        )
+        return results or []
+    except Exception:  # noqa: BLE001 — MCP unavailable is not a user-facing error
+        return search_listings(
+            parsed["description"], parsed["size"], parsed["max_price"]
+        )
+
 
 def run_agent(query: str, wardrobe: dict) -> dict:
     """
@@ -105,14 +181,67 @@ def run_agent(query: str, wardrobe: dict) -> dict:
       • A handler for ModelUnavailable, so a bad key produces a message rather
         than a stack trace. The import is already at the top of this file.
     """
+
+    # Start a session with new_session().
+    start_trace()
     session = new_session(query, wardrobe)
 
-    # TODO: delete these two lines and build the loop.
-    session["error"] = "The planning loop isn't built yet — see the TODO in agent.py."
-    return session
+    # Count the times round the loop, and call trace.check_iterations(count)
+    # on each one before you go again. It raises when the count passes
+    # MAX_ITERATIONS in config.py — see trace.py.
+    count = 0
+
+    while True:
+        count += 1
+        trace.check_iterations(count)
+
+        # Parse the query into a description, a size, and a max_price.
+        # Put the result in session["parsed"].
+        session["parsed"] = parse_query(query)
+
+        # Call search_listings() with what you parsed.
+        # Put the results in session["search_results"].
+        session["search_results"] = search_listings(
+            description=session["parsed"]["description"],
+            size=session["parsed"]["size"],
+            max_price=session["parsed"]["max_price"],
+        )
+
+        # If nothing came back:
+        # - put a message in session["error"] saying what the user could
+        #   change — "No results" is not that message
+        # - return the session
+        # - do NOT call suggest_outfit with nothing
+        if not session["search_results"]:
+            session["error"] = """Could not find any items matching your description.
+            Broaden your range on size or price if you can to get more matches.
+            Otherwise, there may not be any items like what you're looking for."""
+
+            return session
+
+        #  Choose an item — the first result is fine. Put it in
+        #  session["selected_item"].
+        session["selected_item"] = session["search_results"][0]
+
+        # Call suggest_outfit() with the selected item and the wardrobe.
+        # Put the result in session["outfit_suggestion"].
+        session["outfit_suggestion"] = suggest_outfit(
+            new_item=session["selected_item"],
+            wardrobe=session["wardrobe"],
+        )
+
+        # Call create_fit_card() with the outfit and the item.
+        # Put the result in session["fit_card"].
+        session["fit_card"] = create_fit_card(
+            outfit=session["outfit_suggestion"], new_item=session["selected_item"]
+        )
+
+        # Return the session.
+        return session
 
 
 # ── running it directly ───────────────────────────────────────────────────────
+
 
 def _show(session: dict) -> None:
     if session["error"]:
@@ -121,7 +250,9 @@ def _show(session: dict) -> None:
         return
 
     item = session["selected_item"] or {}
-    print(f"  found:    {item.get('title')} — ${item.get('price')} on {item.get('platform')}")
+    print(
+        f"  found:    {item.get('title')} — ${item.get('price')} on {item.get('platform')}"
+    )
     print(f"  outfit:   {session['outfit_suggestion']}")
     print(f"  fit card: {session['fit_card']}")
 
@@ -130,16 +261,20 @@ if __name__ == "__main__":
     from utils.data_loader import get_example_wardrobe
 
     print("=== A query the data can match ===")
-    _show(run_agent(
-        query="looking for a vintage graphic tee under $30",
-        wardrobe=get_example_wardrobe(),
-    ))
+    _show(
+        run_agent(
+            query="looking for a vintage graphic tee under $30",
+            wardrobe=get_example_wardrobe(),
+        )
+    )
 
     print("\n=== A query it can't ===")
-    _show(run_agent(
-        query="designer ballgown size XXS under $5",
-        wardrobe=get_example_wardrobe(),
-    ))
+    _show(
+        run_agent(
+            query="designer ballgown size XXS under $5",
+            wardrobe=get_example_wardrobe(),
+        )
+    )
 
     print(
         "\nThe second one should stop before the fit card. If both paths look "

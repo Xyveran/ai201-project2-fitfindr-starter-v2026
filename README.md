@@ -114,9 +114,38 @@
 **One full query**
 
 ```
-$ python app.py ask '...'
-
+$ python app.py ask 'looking for a vintage graphic tee under $30'
 ```
+
+> Found:    Graphic Tee — 2003 Tour Bootleg Style — $24.0 on depop
+> 
+> Outfit:   Here are three styling ideas for the **Graphic Tee — 2003 Tour Bootleg Style** using pieces from your wardrobe:
+
+> ### 1. 2000s Streetwear Edge
+> *Play up the vintage bootleg aesthetic with a classic denim-on-black combination.*
+> * **Bottoms:** Baggy straight-leg jeans (dark wash)
+> * **Outerwear:** Vintage black denim jacket 
+> * **Shoes:** Chunky white sneakers
+> * **Accessories:** Black crossbody bag
+> * **Why it works:** The dark wash jeans and black denim jacket create a cohesive, edgy base that lets the faded graphic on the tee pop. Finish with chunky white sneakers to add a 90s/00s retro contrast.
+>
+> ### 2. Effortless Casual & Grunge
+> *Keep it simple, comfortable, and leaning into the "worn-in" feel of the tee.*
+> * **Bottoms:** Wide-leg khaki trousers
+> * **Accessories:** Brown leather belt
+> * **Shoes:** Black combat boots
+> * **Why it works:** Tucking the graphic tee into the wide-leg khaki trousers creates an effortless, relaxed silhouette. Accessorizing witha brown leather belt breaks up the tones, while black combat boots ground the outfit with a touch of grunge.
+> 
+> ### 3. Layered Transitional Look
+> *Layer up for cooler weather while keeping the vintage band-tee front and center.*
+> * **Top (Layered Underneath):** White ribbed tank top (let the white hem/straps peek out for contrast)
+> * **Bottoms:** Baggy straight-leg jeans (dark wash)
+> * **Outerwear (tied around waist or worn):** Black cropped zip hoodie
+> * **Shoes:** Black combat boots
+> * **Accessories:** Black crossbody bag
+> * **Why it works:** Layering a white tank underneath adds dimension and color contrast against the black cotton tee. Pair with baggy jeansand combat boots for an authentic, effortless street-style look.
+> 
+>   Fit card: Found this insanely soft 2003 tour bootleg tee on Depop for just $24 and I'm obsessed with the faded grunge vibe. It has that perfectly boxy, lived-in fit that usually takes years to thrift. Can't wait to style this with baggy denim and combat boots all fall.
 
 **The three tools, tested one at a time**
 
