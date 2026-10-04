@@ -41,7 +41,7 @@
 
 <!-- Three or four sentences: what a user asks for, and what they get back. -->
 
-
+FitFindr is a thrift-shopping agent. A user describes what they want, like "a vintage graphic tee under $30", with an optional size and max price. The agent searches the listings data for the best keyword match, then suggests outfits that pair the find with pieces from the user's wardrobe. It finishes with a short fit card caption the user could post about the find. If nothing matches, it stops and tells the user instead of calling the other tools.
 
 ---
 
@@ -199,15 +199,15 @@ $ python -c "from tools import create_fit_card; from utils.data_loader import lo
 
 **Moment 1**
 
-- *What I asked for:*
-- *What came back:*
-- *What I changed:*
+- *What I asked for:* I asked Claude to review my `search_listings` logic for issues, then asked why it scored keywords against only `title` and `description` instead of every key on the listing.
+- *What came back:* It found several real bugs: `.upper` was missing its `()` in `_size_tokens`, the size filter passed `["size"]` instead of `listing["size"]`, and the scoring generator iterated over `sorted_listings` while assigning to it. On my follow-up, it explained that matching on `id`, `size`, `condition`, `price`, and `platform` adds noise, but `category`, `style_tags`, `colors`, and `brand` carry real signal. A listing with "vintage" only in `style_tags` would score zero.
+- *What I changed:* I fixed the three bugs. I also changed the scoring to build a `listing_aggregate` from the descriptive fields (`title`, `description`, `category`, `style_tags`, `colors`, `brand`) and skip the metadata fields.
 
 **Moment 2**
 
-- *What I asked for:*
-- *What came back:*
-- *What I changed:*
+- *What I asked for:* While writing my acceptance criteria, I asked Claude whether someone could check criteria 4 and 5 without asking me what I meant.
+- *What came back:* For 4 and 5 it said no. "Some information about the outfit price" and "general styling advice" are judgment calls two people could score differently. It suggested checking for the exact `price` value as a substring of the caption, and a non-empty string with no exception for the empty wardrobe.
+- *What I changed:* I rewrote criterion 3 to compare `session["selected_item"]["id"]` against the `id` passed as `new_item` to `suggest_outfit()`. I rewrote criterion 4 around the exact `price` value appearing in the caption.
 
 <!-- ═══════════════════════ UNIT 4 — THE TEST ═══════════════════════
 
