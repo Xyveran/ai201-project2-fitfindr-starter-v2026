@@ -223,8 +223,8 @@ def run_agent(query: str, wardrobe: dict) -> dict:
     # - do NOT call suggest_outfit with nothing
     if not search_results:
         session["error"] = """Could not find any items matching your description.
-        Broaden your range on size or price if you can to get more matches.
-        Otherwise, there may not be any items like what you're looking for."""
+    Broaden your range on size or price if you can to get more matches.
+    Otherwise, there may not be any items like what you're looking for."""
         trace.step("branch", note="search returned []: stopping before suggest_outfit")
         return session
 

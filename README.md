@@ -291,20 +291,68 @@ that produced it:
 **Happy path**
 
 ```
-
+py app.py ask 'I am looking for something warm that will be nice to wear in the Fall under $50' --trace
 ```
+
+[1] parse_query
+     in:  I am looking for something warm that will be nice to wear in the Fall under $50
+     out: {'description': 'I am looking for something warm that will be nice to wear in the Fall', 'size': None, 'max_pr…}
+[2] search_listings (VIA MCP)
+     in:  {'description': 'I am looking for something warm that will be nice to wear in the Fall', 'size': None, 'max_pr…}
+     out: 10 items: Denim Jacket — Light Wash, Cropped, Vintage Levi's 501 Jeans — Medium Wash, Leather Belt — Brown, Braided … +7 more
+     →    10 match(es)
+[3] select_item
+     out: Denim Jacket — Light Wash, Cropped ($42.0, poshmark)
+[4] suggest_outfit
+     in:  Denim Jacket — Light Wash, Cropped ($42.0, poshmark)
+     out: Here are three styling ideas for your new light wash cropped denim jacket, using pieces directly from your war…
+[5] create_fit_card
+     in:  Denim Jacket — Light Wash, Cropped ($42.0, poshmark)
+     out: Obsessed with the structured shoulders on this vintage Wrangler denim jacket I just scored on Poshmark for $42…
+
+  Found:    Denim Jacket — Light Wash, Cropped — $42.0 on poshmark
+
+  Outfit:   Here are three styling ideas for your new light wash cropped denim jacket, using pieces directly from your wardrobe:
+
+> ### 1. Casual Monochromatic Denim (Double Denim)
+> * **The Outfit:** Pair the light wash denim jacket with your **Baggy straight-leg jeans (dark wash)** and the **White ribbed tank top**. 
+> * **Footwear & Accessories:** Finish the look with **Chunky white sneakers** and the **Black crossbody bag**.
+> * **Why it works:** The contrast between the light wash jacket and the dark wash baggy jeans creates a balanced, intentional "Canadian tuxedo" look. Tucking in the white ribbed tank and wearing a cropped jacket plays with proportions (fitted/cropped top + loose/baggy bottoms), while the white sneakers tie into the brightness of the tank.
+
+> ### 2. Preppy & Relaxed Contrast
+> * **The Outfit:** Layer the light wash jacket over the **Oversized grey crewneck sweatshirt**, paired with your **Wide-leg khaki trousers (bottoms)**.
+> * **Footwear & Accessories:** Add the **Brown leather belt** (threaded through thetrousers if visible) and **Chunky white sneakers**.
+> * **Why it works:** This mixes streetwear and smart-casual elements. The oversizedgrey crewneck provides a cozy, relaxed layer underneath the structured shoulders of the cropped jacket. The khaki trousers ground the outfit with earthy tones, and the brown belt adds a nice warmth that complements both the light blue and the khaki.
+
+> ### 3. Edgy Contrast (Blank Canvas Styling)
+> * **The Outfit:** Wear the light wash denim jacket over the **Black cropped zip hoodie**, paired with your **Baggy straight-leg jeans (dark wash)**.
+> * **Footwear & Accessories:** Step into the **Black combat boots** and wear the **Black crossbody bag**.
+> * **Why it works:** Since your new jacket is a "blank canvas," layering it over a black hoodie and combat boots creates a cool, grunge-inspired contrast. The light blue wash pops against the all-black base underneath, and the mix of a cropped denimjacket over a cropped hoodie creates a modern, layered streetwear silhouette.
+
+>   Fit card: Obsessed with the structured shoulders on this vintage Wrangler denim jacket I just scored on Poshmark for $42. It’s the ultimate light wash blank canvas—now I just have to decide whether to add patches or keep it minimalist for that effortless streetwear look.
 
 **Empty search**
 
 ```
-
+py app.py ask 'do you have the 1912 lemon pepper steppers?' --trace
 ```
 
-**On the MCP move:** <!-- what changed in your code, and whether anything
-behaved differently afterwards. If the rewire didn't work, say exactly where it
-broke — the error text and the last thing that worked. That earns the point in
-full. -->
+[1] parse_query
+     in:  do you have the 1912 lemon pepper steppers?
+     out: {'description': 'do you have the 1912 lemon pepper steppers?', 'size': one, 'max_price': None}
+[2] search_listings (VIA MCP)
+     in:  {'description': 'do you have the 1912 lemon pepper steppers?',
+     'size': None, 'max_price': None}
+     out: [] (empty)
+     →    0 match(es)
+[3] branch
+     →    search returned []: stopping before suggest_outfit
 
+  Could not find any items matching your description.
+  Broaden your range on size or price if you can to get more matches.
+  Otherwise, there may not be any items like what you're looking for.
+
+**On the MCP move:** The largest change in my code was a refactor to call the MCP server `search_listings()` tool through the MCP client tool calling function. The behavior of the agent was the same after the move as it was before. <!-- what changed in your code, and whether anything behaved differently afterwards. If the rewire didn't work, say exactly where it broke — the error text and the last thing that worked. That earns the point in full. -->
 
 
 ---
