@@ -19,6 +19,7 @@ import trace
 from tools import search_listings, suggest_outfit, create_fit_card
 from trace import step, start_trace, get_trace
 from generate import ModelUnavailable
+from mcp_client import call_tool
 
 # ── session state ─────────────────────────────────────────────────────────────
 
@@ -185,59 +186,82 @@ def run_agent(query: str, wardrobe: dict) -> dict:
     # Start a session with new_session().
     start_trace()
     session = new_session(query, wardrobe)
+    steps = 0
 
-    # Count the times round the loop, and call trace.check_iterations(count)
-    # on each one before you go again. It raises when the count passes
-    # MAX_ITERATIONS in config.py — see trace.py.
-    count = 0
+    # Parse the query into a description, a size, and a max_price.
+    # Put the result in session["parsed"].
+    steps += 1
+    trace.check_iterations(steps)
+    parsed = parse_query(query=query)
+    session["parsed"] = parsed
+    trace.step("parse_query", inputs=query, returned=str(parsed))
 
-    while True:
-        count += 1
-        trace.check_iterations(count)
+    # Call search_listings() with what you parsed.
+    # Put the results in session["search_results"].
+    steps += 1
+    trace.check_iterations(steps)
+    search_results = call_tool(
+        "search_listings",
+        {
+            "description": parsed["description"],
+            "size": parsed["size"],
+            "max_price": parsed["max_price"],
+        },
+    )
+    session["search_results"] = search_results
+    trace.step(
+        "search_listings (VIA MCP)",
+        inputs=str(parsed),
+        returned=search_results,
+        note=f"{len(search_results)} match(es)",
+    )
 
-        # Parse the query into a description, a size, and a max_price.
-        # Put the result in session["parsed"].
-        session["parsed"] = parse_query(query)
-
-        # Call search_listings() with what you parsed.
-        # Put the results in session["search_results"].
-        session["search_results"] = search_listings(
-            description=session["parsed"]["description"],
-            size=session["parsed"]["size"],
-            max_price=session["parsed"]["max_price"],
-        )
-
-        # If nothing came back:
-        # - put a message in session["error"] saying what the user could
-        #   change — "No results" is not that message
-        # - return the session
-        # - do NOT call suggest_outfit with nothing
-        if not session["search_results"]:
-            session["error"] = """Could not find any items matching your description.
-            Broaden your range on size or price if you can to get more matches.
-            Otherwise, there may not be any items like what you're looking for."""
-
-            return session
-
-        #  Choose an item — the first result is fine. Put it in
-        #  session["selected_item"].
-        session["selected_item"] = session["search_results"][0]
-
-        # Call suggest_outfit() with the selected item and the wardrobe.
-        # Put the result in session["outfit_suggestion"].
-        session["outfit_suggestion"] = suggest_outfit(
-            new_item=session["selected_item"],
-            wardrobe=session["wardrobe"],
-        )
-
-        # Call create_fit_card() with the outfit and the item.
-        # Put the result in session["fit_card"].
-        session["fit_card"] = create_fit_card(
-            outfit=session["outfit_suggestion"], new_item=session["selected_item"]
-        )
-
-        # Return the session.
+    # If nothing came back:
+    # - put a message in session["error"] saying what the user could
+    #   change — "No results" is not that message
+    # - return the session
+    # - do NOT call suggest_outfit with nothing
+    if not search_results:
+        session["error"] = """Could not find any items matching your description.
+        Broaden your range on size or price if you can to get more matches.
+        Otherwise, there may not be any items like what you're looking for."""
+        trace.step("branch", note="search returned []: stopping before suggest_outfit")
         return session
+
+    #  Choose an item — the first result is fine. Put it in
+    #  session["selected_item"].
+    steps += 1
+    trace.check_iterations(steps)
+    session["selected_item"] = search_results[0]
+    trace.step("select_item", returned=session["selected_item"])
+
+    # Call suggest_outfit() with the selected item and the wardrobe.
+    # Put the result in session["outfit_suggestion"].
+    steps += 1
+    trace.check_iterations(steps)
+    session["outfit_suggestion"] = suggest_outfit(
+        new_item=session["selected_item"],
+        wardrobe=session["wardrobe"],
+    )
+    trace.step(
+        "suggest_outfit",
+        inputs=session["selected_item"],
+        returned=session["outfit_suggestion"],
+    )
+
+    # Call create_fit_card() with the outfit and the item.
+    # Put the result in session["fit_card"].
+    steps += 1
+    trace.check_iterations(steps)
+    session["fit_card"] = create_fit_card(
+        outfit=session["outfit_suggestion"], new_item=session["selected_item"]
+    )
+    trace.step(
+        "create_fit_card", inputs=session["selected_item"], returned=session["fit_card"]
+    )
+
+    # Return the session.
+    return session
 
 
 # ── running it directly ───────────────────────────────────────────────────────
