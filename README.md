@@ -229,17 +229,99 @@ $ python -c "from tools import create_fit_card; from utils.data_loader import lo
 
 | Criterion | Target | Try 1 | Try 2 | Try 3 | Try 4 | Try 5 | Verdict |
 |---|---|---|---|---|---|---|---|
-| 1.  |  |  |  |  |  |  |  |
-| 2.  |  |  |  |  |  |  |  |
-| 3.  |  |  |  |  |  |  |  |
-| 4.  |  |  |  |  |  |  |  |
-| 5.  |  |  |  |  |  |  |  |
+| 1. matching query completes | 4 of 5 | PASS | PASS | PASS | PASS | PASS | MET |
+| 2. impossible query stops early | 5 of 5 | PASS | PASS | PASS | PASS | PASS | MET |
+| 3. outfit call item is the same as item search item | 5 of 5 | PASS | PASS | PASS | PASS | PASS | MET |
+| 4. does fit card say price data 1 | 5 of 5 | PASS | PASS | PASS | PASS | PASS | MET |
+| 4. does fit card say price data 2 | 5 of 5 | PASS | PASS | PASS | PASS | PASS | MET |
+| 5. empty wardrobe | 5 of 5 | PASS | PASS | PASS | PASS | PASS | MET |
 
 **Real output from one try**, pasted as text, naming the file and function
 that produced it:
 
 ```
+produced by write_report() in run_eval.py using
+py run_eval.py --label before
+```
 
+empty wardrobe
+
+- Query: `denim jacket under $50`
+- Wardrobe: empty
+
+**Try 1**
+
+- stopped early: no
+- selected_item: Denim Jacket — Light Wash, Cropped ($42.0, poshmark)
+- search_results: 5
+
+Outfit suggestion:
+
+```
+This light-wash, cropped denim jacket with structured shoulders is a versatile wardrobe staple. Because it has a "blank canvas" appeal and a modern cropped silhouette, you can dress it up, down, or use it to play with proportions. 
+
+Here are four different styling directions for this item:
+
+### 1. Model-Off-Duty (Casual & Effortless)
+*Play on the boxy, structured shoulders by keeping the rest of the outfit relaxed and easygoing.*
+* **Bottoms:** High-waisted, wide-leg trousers (in black, beige, or white) or baggy cargo pants. The cropped jacket will cinch your waist against the looser bottoms.
+* **Top:** A fitted, ribbed white tank top or a graphic baby tee tucked in.
+* **Footwear:** Retro sneakers (like Adidas Sambas or New Balance) or chunky loafers.
+* **Accessories:** Oversized sunglasses, a minimalist shoulder bag, and maybe a baseball cap. 
+
+### 2. Elevated & Chic (Smart-Casual)
+*Dress up the light denim by pairing it with sophisticated textures and tailored pieces.*
+* **Bottoms:** A slip midi skirt in satin (black, emerald, or leopard print) or tailored pleated trousers.
+* **Top:** A sleek black bodysuit or a fine-knit turtleneck.
+* **Footwear:** Pointed-toe kitten heels or sleek ankle boots.
+* **Accessories:** Dainty gold layered necklaces, a structured leather handbag, and hoop earrings. 
+
+### 3. Double Denim (Monochromatic & Edgy)
+*Lean into the Canadian tuxedo look by pairing it with the right shades.*
+* **Bottoms:** Either an exact matching light-wash denim skirt (mini or maxi) for a cohesive look, or high-waisted dark-wash jeans for high contrast.
+* **Top:** A simple black or white crop top underneath.
+* **Footwear:** Cowboy boots or chunky black combat boots (like Dr. Martens) to add a little edge.
+* **Accessories:** A leather crossbody bag and a silver chain belt.
+
+### 4. Sweet & Summery (Girly & Playful)
+*Use the light wash to create a bright, warm-weather aesthetic.*
+* **One-Piece:** Layer it over a floral sundress (mini or midi length) or a slip dress. The structured shoulders of the jacket add a cool contrast to a feminine, flowy dress.
+* **Footwear:** Strappy sandals, white canvas sneakers, or ballet flats.
+* **Accessories:** A straw tote bag, delicate pearl jewelry, and a hair claw clip.
+
+---
+
+### Bonus: Customization Ideas (Since it's a "blank canvas")
+If you decide to customize it, here are a few trends that work well on structured light-wash denim:
+* **Enamel Pins & Patches:** Add vintage travel patches, band pins, or quirky pop-culture icons on the collar or chest pockets.
+* **Rhinestone Fringe:** Add iron-on or hand-sewn rhinestone fringe across the back yoke for a modern Western vibe.
+* **Fabric Paint or Embroidery:** Paint a custom floral motif, a quote, or abstract shapes on the back panel.
+```
+
+Fit card:
+
+```
+Found the ultimate vintage Wrangler denim jacket on Poshmark for just $42 and I am obsessed with the structured shoulders. It’s got that boxy, model-off-duty vibe and is totally a blank canvas—can't decide if I want to embroider the back or leave it classic!
+```
+
+Trace:
+
+```
+[1] parse_query
+      in:  denim jacket under $50
+      out: {'description': 'denim jacket', 'size': None, 'max_price': 50.0}
+[2] search_listings (VIA MCP)
+      in:  {'description': 'denim jacket', 'size': None, 'max_price': 50.0}
+      out: 5 items: Denim Jacket — Light Wash, Cropped, 90s Track Jacket — Navy/White Stripe, High-Waisted Denim Shorts — Cutoff … +2 more
+      →    5 match(es)
+[3] select_item
+      out: Denim Jacket — Light Wash, Cropped ($42.0, poshmark)
+[4] suggest_outfit
+      in:  Denim Jacket — Light Wash, Cropped ($42.0, poshmark)
+      out: This light-wash, cropped denim jacket with structured shoulders is a versatile wardrobe staple. Because it has…
+[5] create_fit_card
+      in:  Denim Jacket — Light Wash, Cropped ($42.0, poshmark)
+      out: Found the ultimate vintage Wrangler denim jacket on Poshmark for just $42 and I am obsessed with the structure…
 ```
 
 ---

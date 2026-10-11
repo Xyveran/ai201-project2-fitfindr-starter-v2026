@@ -29,11 +29,32 @@ SCENARIOS = [
         "criterion": 2,
     },
     {
-        # A user with nothing saved. One of unit 4's three failure modes.
+        # Item selected for outfit call matches item search's
+        "name": "outfit call item is the same as item search item",
+        "query": "dark and slim pieces under $30",
+        "wardrobe": "example",
+        "criterion": 3,
+    },
+    {
+        # Fit card contains price data from listing (1)
+        "name": "does fit card say price data 1",
+        "query": "corduroy wide-leg pants under $40",
+        "wardrobe": "example",
+        "criterion": 4,
+    },
+    {
+        # Fit card contains price data from listing (2)
+        "name": "does fit card say price data 2",
+        "query": "90s track jacket under $50",
+        "wardrobe": "example",
+        "criterion": 4,
+    },
+    {
+        # Does not raise and handles empty wardrobe
         "name": "empty wardrobe",
         "query": "denim jacket under $50",
         "wardrobe": "empty",
-        "criterion": None,
+        "criterion": 5,
     },
     # TODO: add what your criteria 3, 4 and 5 need.
     #
