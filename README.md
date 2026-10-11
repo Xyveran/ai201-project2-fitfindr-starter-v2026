@@ -346,14 +346,22 @@ Trace:
 
 | # | Criterion | Target | Verdict | How I decided |
 |---|---|---|---|---|
-| 1 |  |  |  |  |
-| 2 |  |  |  |  |
-| 3 |  |  |  |  |
-| 4 |  |  |  |  |
-| 5 |  |  |  |  |
+| 1 | A matching query completes all three tools | 4 of 5 | MET | 5 of 5 tries on `vintage graphic tee under $30` ended with a fit card and `stopped early: no`. |
+| 2 | An impossible query stops before the second tool | 5 of 5 | MET | 5 of 5 tries on `designer ballgown size XXS under $5` logged `search_listings → [] (empty)`, then `branch → stopping before suggest_outfit`. The message told the user to broaden size or price. |
+| 3 | Selected item matches the item search found | 5 of 5 | MET | 5 of 5 tries on `dark and slim pieces under $30` showed the same Vintage Knit Vest at `select_item`, `suggest_outfit` and `create_fit_card`. Search returned one result, so this is weak evidence (see below). |
+| 4 | Fit card contains the listing price | 5 of 5 | MET | Both items passed 5 of 5. The captions say `$45` and `$25`, not `45.0` and `25.0`. I counted the dollar figure, not the raw float string. |
+| 5 | Empty wardrobe is handled | 5 of 5 | MET | 5 of 5 tries on `denim jacket under $50` with an empty wardrobe returned a long, non-empty suggestion and raised nothing. |
 
 **Diagnoses**
 
+Nothing missed, so there is no step and mechanism to name. Every criterion was met at or above its target. The more honest question is whether my targets were too low, and for two of them I think the answer is yes.
+
+- **Criterion 3 was barely tested.** `dark and slim pieces under $30` returned one listing. With one result, the selected item matches the search item no matter what the code does, so a bug that picked the wrong result could not have shown up. This is the one I would tighten. I would use `90s track jacket under $50` (7 results) and compare the `title` at `select_item` against the first search result and the `new_item` passed to `suggest_outfit`. The trace already logs the title at each step, and it would show a pick of the second or third result.
+- **Criterion 1 never tested the risk I wrote down.** My reason for 4 of 5 was keyword-only matching missing differently phrased queries. But `vintage graphic tee under $30` nearly repeats the title of `Graphic Tee — 2003 Tour Bootleg Style`. A query like `retro concert top` would have tested it.
+- **Criterion 4 has an ambiguous format.** The listing price is `25.0` and the captions say `$25`. Read literally, the exact value is not a substring of the caption. I scored on intent, and I should have written the format into the criterion.
+- **Criterion 2 used one impossible query.** `designer ballgown size XXS under $5` fails on keywords, size and price all at once. It does not show the branch stops when only one of them eliminates everything.
+
+On the four places an agent can fail, the tools, the loop's branch, and the model's output were each exercised. Session state is the thinnest, and that is where criterion 3 sits. Temperature was 0.9, so the model-output rows held up under some pressure.
 
 
 ---

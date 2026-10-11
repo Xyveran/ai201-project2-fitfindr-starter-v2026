@@ -49,6 +49,10 @@ For queries returning at least one listing, `session["selected_item"]["id"]` is 
 
 **Why this target:** A dict-identity bug would make `suggest_outfit()` and `create_fit_card()` talk about a different item than the item intended. I chose to target 5 of 5 because this is a deterministic check to verify that state is correctly maintained.
 
+> **Revised in unit 4:** For a query returning at least two listings, `session["selected_item"]["title"]` equals the `title` of the first search result and the `title` of the `new_item` passed to `suggest_outfit()`, in 5 of 5 tries.
+>
+> **Why revised:** "At least one listing" let a one-result query satisfy the check no matter what the code did, so it could not tell a correct selection from a wrong one. Requiring two or more results, and naming the first result, makes a wrong pick detectable. I compare `title` because the trace already logs it at `select_item`, `suggest_outfit` and `create_fit_card`, and the listings I tested have distinct titles, so it identifies an item as well as `id` does.
+
 ---
 
 ## 4. The fit card contains price data from the listing dict
@@ -56,6 +60,10 @@ For queries returning at least one listing, `session["selected_item"]["id"]` is 
 The exact `price` value from the listing dict appears as a substring of the caption in 5 of 5 tries.
 
 **Why this target:** The price is a verbatim field in the listing dict that my prompt can directly supply the model. Whether the model chooses to use it in the caption is the only variable, and that results from prompt construction. Since nothing here depends on generation luck, I'm holding it to 5 of 5.
+
+> **Revised in unit 4:** The caption contains the listing's `price` as a whole-dollar figure with a dollar sign (`$25` for a price of `25.0`), or with decimals if the price has cents (`$24.50`), in 5 of 5 tries.
+>
+> **Why revised:** "Exact `price` value as a substring" couldn't be scored the same way twice. The listing stores `25.0` and the captions say `$25`, so a literal reading fails every try and a lenient one passes every try. The new version says which format counts.
 
 ---
 
