@@ -444,7 +444,6 @@ py app.py ask 'do you have the 1912 lemon pepper steppers?' --trace
 
 **On the MCP move:** The largest change in my code was a refactor to call the MCP server `search_listings()` tool through the MCP client tool calling function. The behavior of the agent was the same after the move as it was before. <!-- what changed in your code, and whether anything behaved differently afterwards. If the rewire didn't work, say exactly where it broke — the error text and the last thing that worked. That earns the point in full. -->
 
-
 ---
 
 ## The Improvement
@@ -481,8 +480,7 @@ The adjustment to the query used for testing criterion 3 ensured that the test i
 <!-- For each criterion still missed: what you'd do, and why you stopped where
      you did. "I ran out of time" is fine if it's true. Pretending nothing is
      left is not. -->
-
-
+All five criteria were scored MET, so none was missed outright, but three of them were tested more weakly than they should have been. Criterion 1 never tested the risk I wrote down: I set the 4 of 5 target because keyword-only matching could miss differently phrased queries, yet `vintage graphic tee under $30` nearly repeats the title of `Graphic Tee — 2003 Tour Bootleg Style`, so a query like `retro concert top` is what would actually have exercised that weakness. Criterion 4 has an ambiguous format, since the listing price is `25.0` while the captions say `$25`, so read literally the exact value is not a substring of the caption; I scored on intent, and I should have written the expected format into the criterion itself. Criterion 2 used a single impossible query, `designer ballgown size XXS under $5`, which fails on keywords, size and price all at once, so it does not show that the branch still stops when only one of those eliminates every listing. If I continued, I would add a loosely phrased query for criterion 1, rewrite criterion 4 to require the `$` price format, and add impossible queries that fail on only one of keywords, size or price for criterion 2. I stopped where I did because this unit asks for one change measured properly, and I spent it on criterion 3, where the test itself could not verify the data handoff.
 
 <!-- ═════════════════════════════════════════════════════════════════════
 
