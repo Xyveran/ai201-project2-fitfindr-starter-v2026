@@ -31,7 +31,7 @@ SCENARIOS = [
     {
         # Item selected for outfit call matches item search's
         "name": "outfit call item is the same as item search item",
-        "query": "dark and slim pieces under $30",
+        "query": "90s track jacket under $50",
         "wardrobe": "example",
         "criterion": 3,
     },

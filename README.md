@@ -454,26 +454,25 @@ py app.py ask 'do you have the 1912 lemon pepper steppers?' --trace
 
      `python run_eval.py --label after` -->
 
-**What I changed:**
+**What I changed:** Query tested for criterion 3.
 
-**Which failure it was meant to fix:**
+**Which failure it was meant to fix:** The intial query led to only a single match being retrieved. When running tests to specifically determine if the top item from `search_listings()` is being correctly passed into `suggest_outfit()`, a good query will produce multiple valid matches. With only a single valid match, the test can only verify that an item is delivered with no additional granularity.
 
 ### Run Log — After
 
-| Criterion | Target | Try 1 | Try 2 | Try 3 | Try 4 | Try 5 | Verdict |
-|---|---|---|---|---|---|---|---|
-| 1.  |  |  |  |  |  |  |  |
-| 2.  |  |  |  |  |  |  |  |
-| 3.  |  |  |  |  |  |  |  |
-| 4.  |  |  |  |  |  |  |  |
-| 5.  |  |  |  |  |  |  |  |
+| # | Criterion | Target | Verdict | How I decided |
+|---|---|---|---|---|
+| 1 | A matching query completes all three tools | 4 of 5 | MET | 5 of 5 tries on `vintage graphic tee under $30` ended with a fit card and `stopped early: no`. |
+| 2 | An impossible query stops before the second tool | 5 of 5 | MET | 5 of 5 tries on `designer ballgown size XXS under $5` logged `search_listings → [] (empty)`, then `branch → stopping before suggest_outfit`. The message told the user to broaden size or price. |
+| 3 | Selected item matches the item search found | 5 of 5 | MET | 5 of 5 tries on `90s track jacket under $50` showed the same item at `select_item`, `suggest_outfit` and `create_fit_card`. |
+| 4 | Fit card contains the listing price | 5 of 5 | MET | Both items passed 5 of 5. The captions say `$45` and `$25`, not `45.0` and `25.0`. I counted the dollar figure, not the raw float string. |
+| 5 | Empty wardrobe is handled | 5 of 5 | MET | 5 of 5 tries on `denim jacket under $50` with an empty wardrobe returned a long, non-empty suggestion and raised nothing. |
 
 **Did it help, and how do I know:**
 
 <!-- If it made things worse, say that. Honestly reported, that earns full
      credit and is more interesting than one that worked. -->
-
-
+The adjustment to the query used for testing criterion 3 ensured that the test itself was actually capable of verifying data integrity. The change did not improve the system or provide new information. Criterion 3's target of verifying data integrity could have been observed in the traces of all the other runs where a query produced more than one valid match. Making this change, and deliberately using a query that returns many valid matches, reinforces that the agent's tool always correctly passes the top result of its search and uses that result to suggest outfits.
 
 ---
 
